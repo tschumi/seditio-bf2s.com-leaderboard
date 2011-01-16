@@ -1,0 +1,118 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>BF2S MyLeaderBoard API</title>
+</head>
+
+<body>
+<h1>BF2S MyLeaderBoard API</h1>
+<p style="background: #CCFFFF; padding:5px 10px; border:1px solid #0099CC"><em><strong>Updated! 11-14-05</strong></em> The XML feed now returns more information in the XML feed itself and this API has been updated to properly deal with the new data. You lose nothing, and gain a few more fields of commonly requested data! Also added a little bit more comment documentation and split out the date formatting function so it is easier to overwrite in extended classes. </p>
+<p>The provided script will allow you to easily add a Battlefield 2 Leader board to you own home page. <a href="examples.php">See some output examples</a>. </p>
+<p>Installation takes a few, simple steps:</p>
+<ol>
+	<li>Upload the files</li>
+	<li>CHMOD (set permissions) the &quot;cache&quot; folder to 777. (<em>This folder is where leader board XML files are stored, and PHP needs to be able to write to that directory.</em>) </li>
+	<li>Add the code to your PHP file where you want the leader board to show up. Done! </li>
+</ol>
+<p>Ok, so it's not that many steps, honestly. There are a few things you'll want to be aware of, however.</p>
+<p>First of all, <strong><font size="+2">USE CACHING</font></strong>. This API uses a built in caching mechanism -- in fact, it requires it to work. But if you make your own API, you'd better use some kinda of caching mechanism because the BF2S.com server <strong>will block your requests for XML leader boards</strong> if you request more than 3 per 6 hours. This is to keep my server, data, and bandwidth safe.</p>
+<p>Second, this API is pretty smart. You are not limited to using just the standard table output for the results. You can choose to format the output anyway you see fit. You can even sort the data as you see fit. The important function, in this case is <strong>showList()</strong>. But first, let's get a basic setup going... </p>
+<h2><br />
+Basic Usage</h2>
+<p>After everything is uploaded and CHMOD'ed correctly, open up your the PHP file you want the leader board to appear in. Start by importing the bf2s-mlb.php class: </p>
+<p><font color="#0000bb">&lt;?php&nbsp;<br></font><font color="#007700">require(</font><font color="#dd0000">'./bf2s-mlb.php'</font><font color="#007700">);&nbsp;</font><font color="#007700"><br></font><font color="#0000bb">?&gt;</font></p>
+<p>&nbsp;</p>
+<p>Then, proceed to call for the leader board you wish to run on your site:</p>
+<p><font color="#0000bb">&lt;?php&nbsp;</font><font color="#ff8000"><br />
+</font><font color="#0000bb">$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">get</font><font color="#007700">(</font><font color="#dd0000">'43917103,45507687,45138378,43485335,39709471,44260977'</font><font color="#007700">);&nbsp;<br />
+</font><font color="#0000bb">?&gt;</font> </p>
+<p>When calling a leader board be <strong>VERY</strong> aware of a few things:</p>
+<ol>
+	<li>You may only pull up to 3 xml feeds every 6 hours -- no exceptions. I <em><strong>highly</strong></em> recommend that you test your PID lists on the <a href="http://bf2s.com/my-leaderboard.php">BF2S.com My Leader Board</a> page before using them here. </li>
+	<li>You may query up to 64 players per feed. My system will not 'error out' if you request 100, you'll simply only get the first 64 of them back. </li>
+	<li>Only PID numbers will be accepted. If you query by a nick, the API will kindly tell you to revise your query string. (This query won't count towards your query limit because it never actually gets to the query part.) Technically, my system can handle query by name, PID, or mixed, but things are much, much simpler if you stick to the PID numbers. Thus, this API requires that you do so. </li>
+	<li>This API uses a cache file. It will be written to the cache directory. It will automatically refresh this cache file every 6 hours. </li>
+	<li>The players you request will be requeued for a stats update automatically. (Even those not in the system.) </li>
+</ol>
+<p>&nbsp;</p>
+<p>Now that the leader board is either loaded from BF2S, or from your local cache, you will be ready to display it. The most important function here is showList which can be used to sort and apply custom formatting, to the leader board. It looks a little like this:</p>
+<p>&lt;ul&gt;<font color="#0000bb">&lt;?php&nbsp;$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">showList</font><font color="#007700">(</font><font color="#dd0000">'rank'</font><font color="#007700">,</font><font color="#dd0000">'&lt;li&gt;{NICK},&nbsp;{RANK}&lt;/li&gt;'</font><font color="#007700">);&nbsp;</font><font color="#0000bb">?&gt;</font>&lt;/ul&gt;</p>
+<p>The above code would produce a list of players showing name and rank, sorted by their rank. So, here's the juicy details for the showList function... </p>
+<p><strong>showList($sort, $format)</strong></p>
+<dl>
+	<dt>$sort </dt>
+	<dd>Use this to change what column of data the leader board is sorted on. You can choose any of the columns. <em>Default: Score</em> </dd>
+	<dt>$format</dt>
+	<dd>Pass a custom string, with replaceable elements, that will be output for each player in the leader board. <em>Default: Simple table with table html wrappers</em> </dd>
+</dl>
+<p>Available Columns:</p>
+<dl>
+	<dt>NICK</dt>
+	<dd>The player's nick </dd>
+	<dt>PID</dt>
+	<dd>The player's PID number </dd>
+	<dt>RANK</dt>
+	<dd>The player's rank (numerical) </dd>
+	<dt>SCORE</dt>
+	<dd>The player's score </dd>
+	<dt>SPM</dt>
+	<dd>The player's SPM (float, rounded to 2 places) </dd>
+	<dt>TIME</dt>
+	<dd>The player's total time played in Seconds (will be displayed in hours, two decimal places) </dd>
+	<dt>LINK </dt>
+	<dd>A link to the players full profile</dd>
+	<dt>COUNTRY</dt>
+	<dd>The player's home country (two character code) </dd>
+	<dt>KDR</dt>
+	<dd>The player'sKill to Death Ratio</dd>
+	<dt>KILLS</dt>
+	<dd>The player's total kills</dd>
+	<dt>DEATHS</dt>
+	<dd>The player's total deaths</dd>
+	<dt>WLR</dt>
+	<dd>The player's win to loss ratio</dd>
+	<dt>WINS</dt>
+	<dd>The player's total wins</dd>
+	<dt>LOSSES</dt>
+	<dd>The player's total losses </dd>
+</dl>
+<p>You can sort on any of those columns, and you may use any of those columns in the <strong>format</strong> parameter. When used in the format parameter, the column should be wrapped by curly braces eg: <strong>{SCORE}</strong>. For a good number of examples, it would be wise to peruse the <a href="examples.php">examples.php</a> file which details many ways of using the API's showList() function. </p>
+<p><strong><em>Note:</em></strong> If you specify a custom $format parameter, the function will no longer automatically wrap the output in &lt;table /&gt; tags -- you'll need to do that yourself. </p>
+<h2><br />
+Custom Parsing </h2>
+<p>While the XML feed provides data in a raw format, this API will convert certain elements into more human readable information. If you wish to custom parse this information, you may do so by using the lower level function <strong>getList()</strong></p>
+<p><strong>getList()</strong> will accept 0 or 1 parameters - a &quot;sort by&quot; variable. This is the same as it is in showList(). However, this function does not directly echo the data. Additionally, it does not parse the raw data into &quot;human readable&quot; formats. This will return a raw, ready to be manipulated array of information sorted by a column, or not sorted at all. </p>
+<h2><br />
+Debugging</h2>
+<p>We all hate it, but sometimes things just don't work. The API comes with a fairly extensive debugger built into it. In order to collect and display the debugging output, you'll need to:</p>
+<ol>
+	<li>Activate the debugger <br />
+		and</li>
+	<li>Display the debugging results</li>
+</ol>
+<p>This is, however, very simple. As an example:</p>
+<p>A normal MLB code setup:</p>
+<p><font color="#0000bb">&lt;?php&nbsp;<br />
+</font><font color="#007700">require(</font><font color="#dd0000">'./bf2s-mlb.php'</font><font color="#007700">);&nbsp;</font><font color="#ff8000"><br />
+</font><font color="#0000bb">$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">get</font><font color="#007700">(</font><font color="#dd0000">'43917103,45507687,45138378,43485335,39709471,44260977'</font><font color="#007700">);&nbsp;</font><font color="#007700"><br />
+</font><font color="#0000bb">$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">showList</font><font color="#007700">(</font>);<font color="#007700"><br />
+</font><font color="#0000bb">?&gt;</font>   </p>
+<p>Compared to the API with the debugger turned on and its output printed:</p>
+<p><font color="#0000bb">&lt;?php&nbsp;<br />
+</font><font color="#007700">require(</font><font color="#dd0000">'./bf2s-mlb.php'</font><font color="#007700">);&nbsp;</font><font color="#ff8000"><br />
+</font><font color="#0000bb">$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">debug = true; <br />
+$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">get</font><font color="#007700">(</font><font color="#dd0000">'43917103,45507687,45138378,43485335,39709471,44260977'</font><font color="#007700">);&nbsp;</font><font color="#007700"><br />
+</font><font color="#0000bb">$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">showList</font><font color="#007700">(</font>);<font color="#007700"><br>
+<font color="#007700"><br />
+echo&nbsp;</font><font color="#dd0000">'&lt;pre&gt;'</font><font color="#007700">;&nbsp;<br />
+</font><font color="#0000bb">$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">printLog</font><font color="#007700">();&nbsp;<br />
+echo&nbsp;</font><font color="#dd0000">'&lt;/pre&gt;'</font><font color="#007700">;</font><font color="#0000bb"><br>
+</font></font><font color="#0000bb">?&gt;</font> </p>
+<p>Pretty easy. Of course, if there are errors, they are always available in the <font color="#0000bb">$mlb</font><font color="#007700">-&gt;</font><font color="#0000bb">errors</font> variable, regardless of whether debugging is activated or not.  </p>
+<p>&nbsp;</p>
+<p>Aight, take it easy and enjoy. :D </p>
+<p> <strong><em>- Jeff</em></strong></p>
+<p>&nbsp;</p>
+</body>
+</html>
